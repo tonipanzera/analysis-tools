@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
-
 import numpy as np
 
 class rebinning:
@@ -98,20 +91,8 @@ class rebinning:
                     
                     self.new_data[i] += new_left + new_right
             
-            if start==0:
-                zero_count += 1
-            elif start==1:
-                zero_count = zero_count
-            elif start==2:
-                zero_count -= 1
-            elif start==3:
-                zero_count -= 2
-            elif start==4:
-                zero_count -= 3
-            elif start==5:
-                zero_count -= 4
+            zero_count += -start+1
             
-        
         return self.new, self.new_data
             
             

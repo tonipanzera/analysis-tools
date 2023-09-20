@@ -17,16 +17,17 @@ class Rebin:
         
     
     def clean(self):
-        
+        list_temp = []
         for i in range(len(self.old)):
             
-            list_temp = []
+            #list_temp = []
             
             if self.old[i]<self.new[0]:
+                #print(i)
                 list_temp.append(i)
             if self.new[-1]<self.old[-1-i]:
                 list_temp.append(-1-i)
-            
+        #print(list_temp)
         self.data = np.delete(self.data, list_temp)
         self.error = np.delete(self.error, list_temp)
         self.old = np.delete(self.old, list_temp)
@@ -52,11 +53,11 @@ class Rebin:
             self.new_data = np.delete(self.new_data, -1)
             self.new_error = np.delete(self.new_error, -1)
         
-        for i in range(len(self.data)):
+        #for i in range(len(self.data)):
             
-            if self.data[i] < 0:
+            #if self.data[i] < 0:
                 
-                self.data[i]=0
+                #self.data[i]=0
             
     def rebinData(self):
         
@@ -67,36 +68,41 @@ class Rebin:
             start = self.list1[i]
             error_list = []
             
+            new_bin = self.new[i+1]-self.new[i]
+            
             if i==0:
                 
+                
                 for j in range(start-1):
-                    self.new_data[i] +=self.data[i+j]
-                    error_list.append(self.error[i+j]**2)
+                    old_bin = self.old[i+j+1]-self.old[i+j]
+                    self.new_data[i] +=self.data[i+j]*old_bin/new_bin
+                    error_list.append(((old_bin/new_bin)*self.error[i+j])**2)
                    
                 old_bin_size = self.old[i+start]-self.old[i+start-1]
                 frac = (self.new[i+1]-self.old[i+start-1])/old_bin_size
                 
-                error_list.append(frac*(self.error[i+start-1])**2)
+                error_list.append((frac*self.error[i+start-1]*(old_bin_size/new_bin))**2)
                 error_list = np.array(error_list)
                 
-                self.new_data[i] += frac*self.data[i+start-1]
+                self.new_data[i] += frac*self.data[i+start-1]*(old_bin_size/new_bin)
                 self.new_error[i] = np.sqrt(np.sum(error_list))
             
             
             elif i==len(self.list1)-1:
                 
                 for j in range(start-1):
-                    self.new_data[i] += self.data[i+j-zero_count]
-                    error_list.append(self.error[i+j-zero_count]**2)
+                    old_bin = self.old[i+j-zero_count]-self.old[i+j-zero_count-1]
+                    self.new_data[i] += self.data[i+j-zero_count]*old_bin/new_bin
+                    error_list.append((self.error[i+j-zero_count]*(old_bin/new_bin))**2)
                 
-                old_bin_size = self.old[i-zero_count]-self.old[i-1-zero_count]
+                old_bin_size = self.old[i-zero_count]-self.old[i-zero_count-1]
                 frac = (self.old[i-zero_count]-self.new[i])/old_bin_size
                 
-                error_list.append(frac*(self.error[i-1-zero_count])**2)
+                error_list.append((frac*self.error[i-1-zero_count]*(old_bin_size/new_bin))**2)
                 
                 error_list = np.array(error_list)
                 
-                self.new_data[i] += frac*self.data[i-1-zero_count]
+                self.new_data[i] += frac*self.data[i-zero_count-1]*(old_bin_size/new_bin)
                 self.new_error[i] = np.sqrt(np.sum(error_list))
                 
             else:
@@ -108,29 +114,33 @@ class Rebin:
                     frac = new_bin_size/old_bin_size
                     
                     self.new_data[i] += frac*self.data[i+start-1-zero_count]
-                    self.new_error[i] += np.sqrt(frac*(self.error[i+start-1-zero_count])**2)
+                    self.new_error[i] += np.sqrt((frac*self.error[i+start-1-zero_count])**2)
                 
                 else:
                     
                     for j in range(start-1):
-                        self.new_data[i] += self.data[i+j-zero_count]
-                        error_list.append(self.error[i+j-zero_count]**2)
+                        old_bin = self.old[i+j-zero_count]-self.old[i+j-zero_count-1]
+                        self.new_data[i] += self.data[i+j-zero_count]*old_bin/new_bin
+                        error_list.append((self.error[i+j-zero_count]*(old_bin/new_bin))**2)
                     
-                    old_bin_size_left = self.old[i-zero_count]-self.old[i-1-zero_count]
+                    old_bin_size_left = self.old[i-zero_count]-self.old[i-zero_count-1]
+                    #new_bin_left = self.new[i]
+                    #print(old_bin_size_left)
                     frac_left = (self.old[i-zero_count]-self.new[i])/old_bin_size_left
-                    new_left = frac_left*self.data[i-1-zero_count]
-                    error_list.append(frac_left*(self.error[i-1-zero_count])**2)
+                    #print(zero_count)
+                    new_left = frac_left*self.data[i-zero_count-1]*(old_bin_size_left/new_bin)
+                    error_list.append((frac_left*self.error[i-1-zero_count]*(old_bin_size_left/new_bin))**2)
                     
                     old_bin_size_right = self.old[i+start-zero_count]-self.old[i+start-zero_count-1]
                     frac_right = (self.new[i+1]-self.old[i-zero_count+start-1])/old_bin_size_right
-                    new_right = frac_right*self.data[i-zero_count+start-1]
-                    error_list.append(frac_right*(self.error[i-zero_count+start-1])**2)
+                    new_right = frac_right*self.data[i-zero_count+start-1]*(old_bin_size_right/new_bin)
+                    error_list.append((frac_right*self.error[i-zero_count+start-1]*(old_bin_size_right/new_bin))**2)
                     
                     error_list = np.array(error_list)
-                    
+                    print(new_left,new_right)
                     self.new_data[i] += new_left + new_right
                     self.new_error[i] = np.sqrt(np.sum(error_list))
-            
+            #print(zero_count)
             zero_count += -start+1
             
         return self.new[0:len(self.new_data)], self.new_data, self.new_error
@@ -154,6 +164,7 @@ class FitContinuum:
         start_idx_right = functions.closest_value_idx(self.x, self.x_range_right[0])
         end_idx_right = functions.closest_value_idx(self.x, self.x_range_right[1])
         
+        #print(self.y)
         #Isolate the x, y, and errors in question
         x_left = self.x[start_idx_left:end_idx_left]
         x_right = self.x[start_idx_right:end_idx_right]
@@ -161,6 +172,8 @@ class FitContinuum:
         y_right = self.y[start_idx_right:end_idx_right]
         err_left = self.error[start_idx_left:end_idx_left]
         err_right = self.error[start_idx_right:end_idx_right]
+        #print(y_left)
+        #print(y_right)
         
         #Concatenate these to have one array for each
         x_tot = np.concatenate((x_left, x_right))
